@@ -2,9 +2,18 @@ name: Validate
 
 on:
   push:
+    branches:
+      - master
+    tags:
+      - 'v*'
   pull_request:
   release:
     types: [published]
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Create Release"]
+    types:
+      - completed
 
 jobs:
   validate:
