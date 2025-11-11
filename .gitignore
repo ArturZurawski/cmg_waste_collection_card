@@ -1,0 +1,10 @@
+node_modules/
+
+# Keep built file for HACS
+dist/*
+!dist/cmg-waste-collection-card.js
+
+*.js.map
+.DS_Store
+*.log
+.cache/

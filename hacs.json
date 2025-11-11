@@ -1,0 +1,7 @@
+{
+  "name": "CMG Waste Collection Card",
+  "content_in_root": false,
+  "filename": "cmg-waste-collection-card.js",
+  "render_readme": true,
+  "country": ["PL"]
+}

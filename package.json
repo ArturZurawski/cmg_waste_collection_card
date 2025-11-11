@@ -1,0 +1,45 @@
+{
+  "name": "cmg-waste-collection-card",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Custom Lovelace card for CMG Waste Collection integration",
+  "main": "dist/cmg-waste-collection-card.js",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "dev": "rollup -c -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ArturZurawski/cmg_waste_collection_card"
+  },
+  "keywords": [
+    "home-assistant",
+    "homeassistant",
+    "hacs",
+    "lovelace",
+    "custom-card",
+    "waste",
+    "garbage",
+    "collection"
+  ],
+  "author": "Artur Zurawski",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-typescript": "^7.23.0",
+    "@rollup/plugin-babel": "^6.0.4",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@typescript-eslint/eslint-plugin": "^6.11.0",
+    "@typescript-eslint/parser": "^6.11.0",
+    "custom-card-helpers": "^1.9.0",
+    "lit": "^3.1.0",
+    "rollup": "^4.6.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,192 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.2). Leave empty to auto-increment'
+        required: false
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            # Use provided version
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using provided version: $VERSION"
+          else
+            # Get latest tag
+            LATEST_TAG=$(git tag -l "v*" --sort=-v:refname | head -n 1)
+
+            if [ -z "$LATEST_TAG" ]; then
+              # No tags exist, start with 1.0.0
+              VERSION="1.0.0"
+              echo "No previous tags found, starting with: $VERSION"
+            else
+              # Remove 'v' prefix and increment patch version
+              LATEST_VERSION=${LATEST_TAG#v}
+              echo "Latest version: $LATEST_VERSION"
+
+              # Split version into parts
+              IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
+
+              # Increment patch version
+              PATCH=$((PATCH + 1))
+              VERSION="$MAJOR.$MINOR.$PATCH"
+              echo "Auto-incremented version: $VERSION"
+            fi
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Final version: $VERSION"
+
+      - name: Check if tag exists
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "Error: Tag v${{ steps.version.outputs.version }} already exists!"
+            exit 1
+          fi
+
+      - name: Update package.json version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Update version in package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+
+          # Verify the change
+          echo "Updated package.json:"
+          grep "\"version\":" package.json
+
+      - name: Update version in source code
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Update version in TypeScript source
+          sed -i "s/Version [0-9]\+\.[0-9]\+\.[0-9]\+/Version $VERSION/" src/cmg-waste-collection-card.ts
+
+          # Verify the change
+          echo "Updated version in source:"
+          grep "Version" src/cmg-waste-collection-card.ts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Verify build
+        run: |
+          if [ ! -f "dist/cmg-waste-collection-card.js" ]; then
+            echo "Error: Build failed - dist file not found"
+            exit 1
+          fi
+
+          echo "Build successful!"
+          ls -lh dist/
+
+          # Verify version in built file
+          if grep -q "Version ${{ steps.version.outputs.version }}" dist/cmg-waste-collection-card.js; then
+            echo "Version correctly updated in built file"
+          else
+            echo "Warning: Version may not be updated in built file"
+          fi
+
+      - name: Commit version changes
+        run: |
+          git add package.json src/cmg-waste-collection-card.ts dist/cmg-waste-collection-card.js
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+
+      - name: Create and push tag
+        run: |
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.version }}"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## 🚀 Release ${{ steps.version.outputs.version }}
+
+            ### Installation via HACS
+
+            1. Open HACS in Home Assistant
+            2. Go to Frontend section
+            3. Click on the three dots in the top right corner
+            4. Select "Custom repositories"
+            5. Add this repository: `https://github.com/${{ github.repository }}`
+            6. Select category: "Lovelace"
+            7. Click "Add"
+            8. Find "CMG Waste Collection Card" and install
+            9. Restart Home Assistant
+
+            ### Manual Installation
+
+            1. Download `cmg-waste-collection-card.js` from the assets below
+            2. Copy it to `<config>/www/` directory
+            3. Add the resource in Home Assistant:
+               - Go to Settings → Dashboards → Resources
+               - Click "Add Resource"
+               - URL: `/local/cmg-waste-collection-card.js`
+               - Resource type: JavaScript Module
+            4. Restart Home Assistant
+
+            ### Configuration
+
+            ```yaml
+            type: custom:cmg-waste-collection-card
+            title: Waste Collection
+            show_title: true
+            icon_style: colored_background
+            ```
+
+            See [README.md](https://github.com/${{ github.repository }}/blob/${{ steps.version.outputs.tag }}/README.md) for full documentation.
+
+            ---
+
+            **Full Changelog**: ${{ github.event.repository.html_url }}/compare/${{ steps.version.outputs.previous_tag }}...${{ steps.version.outputs.tag }}
+          files: |
+            dist/cmg-waste-collection-card.js
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## ✅ Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
