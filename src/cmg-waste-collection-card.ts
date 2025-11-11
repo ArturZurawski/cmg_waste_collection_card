@@ -611,7 +611,7 @@ window.customCards.push({
 });
 
 console.info(
-  '%c CMG-WASTE-COLLECTION-CARD %c Version 0.0.1',
+  '%c CMG-WASTE-COLLECTION-CARD %c Version 1.0.0',
   'color: orange; font-weight: bold; background: black',
   'color: white; font-weight: bold; background: dimgray'
 );

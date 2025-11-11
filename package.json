@@ -1,6 +1,6 @@
 {
   "name": "cmg-waste-collection-card",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Custom Lovelace card for CMG Waste Collection integration",
   "main": "dist/cmg-waste-collection-card.js",
