@@ -1,0 +1,24 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: HACS Validation
+        uses: hacs/action@main
+        with:
+          category: "plugin"
+
+      - name: Validation Success
+        run: |
+          echo "✅ HACS validation passed successfully!"
+          echo "The repository meets all HACS requirements for the plugin category."
